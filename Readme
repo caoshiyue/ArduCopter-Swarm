@@ -1,0 +1,7 @@
+The original two projects source you can see: 
+https://github.com/ArduPilot/ardupilot
+https://github.com/ArduPilot/MissionPlanner
+
+Modification including:
+1 The communication network of swarm constructed by Xbee modules, so add uart driver supporting Xbee api protocol.
+2 Add data view, flight path view, control commands for swarm in MissionPlanner.
