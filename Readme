@@ -5,3 +5,4 @@ https://github.com/ArduPilot/MissionPlanner
 Modification including:
 1 The communication network of swarm constructed by Xbee modules, so add uart driver supporting Xbee api protocol.
 2 Add data view, flight path view, control commands for swarm in MissionPlanner.
+3 Modify mavlink send function, so that sending head, payload and check bytes calls write() only once. 
