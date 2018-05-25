@@ -286,7 +286,7 @@ void NOINLINE Copter::send_rpm(mavlink_channel_t chan)
     }
 }
 #if XBEE_TELEM==ENABLED
-void Copter::set_send_add(uint64_t* add_list, uint8_t lenth)
+void Copter::set_send_add(uint8_t* add_list, uint8_t lenth)
 {
     gcs_chan[MAVLINK_COMM_2].xbee_set_targ_add(add_list, lenth);
 }

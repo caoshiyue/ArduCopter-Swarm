@@ -326,20 +326,15 @@ int16_t PX4UARTDriver::xbee_read()
 size_t PX4UARTDriver::xbee_write(const uint8_t *buffer, size_t size)
 {
     uint16_t lenth =0;
-    /*
     for(int i=0;i<targ_add_lenth;i++)
     {
         targ_add=targ_add_list[i];
         lenth= pack((const char*)buffer,(uint16_t)size);
         lenth= write(pack_buf,lenth);
     }
-    */
-    targ_add=0x0013a20000000000+gcs_add_h*65536+gcs_add_l;
-    lenth= pack((const char*)buffer,(uint16_t)size);
-    lenth= write(pack_buf,lenth);
     return lenth;
 }
-void PX4UARTDriver::xbee_set_targ_add(uint64_t* add_list, uint8_t lenth)
+void PX4UARTDriver::xbee_set_targ_add(uint8_t* add_list, uint8_t lenth)
 {
     set_targ_add(add_list, lenth);//target_add=(targ_sysid+0xe0)*0x0101 sysid: 1 2 3 4 
 }
@@ -502,25 +497,27 @@ void PX4UARTDriver::_timer_tick(void)
 
 #if XBEE_TELEM==ENABLED
 
-void Xbee::xbee_init(call_read _read, call_available _available, S_class *_obj)
+void Xbee::xbee_init(call_read _read, call_available _available,PX4::PX4UARTDriver* _obj)
 {
-	operating = false;
-	datalenth = 0;
-	read = _read;
-	available = _available;
-	obj = _obj;
-        targ_add = 0;
-        targ_add_list[0] = targ_add;
-	targ_add_lenth = 1;
+    operating = false;
+    datalenth = 0;
+    Frame_ID = 0;
+    targ_add = 0xdfdf;
+    read = _read;
+    available = _available;
+    obj=_obj;
+    targ_add_list[0]=0xdfdf;
+    targ_add_lenth=1;
 }
-//start Length	F_t	F_ID Address_64				 Address_16	broadcast_r	Options Data Checksum
-//7E	00 0F	10	01	 00 13 A2 00 41 78 E9 80 FF FE		00			00		__	 3D
+
+//start-delimeter Length Frame_type Frame_ID Address Option-byte Data Checksum
+//7E			  __ __	 01		    __		 __ __	 00			 ____ 81
 uint16_t Xbee::pack(const char * data, uint16_t lenth)// lenth of data
 {
 	uint16_t pack_lenth;
 	uint8_t i = 0;
 	uint8_t check;
-	memset(pack_buf, 0, sizeof(pack_buf));
+        memset(pack_buf, 0, sizeof(pack_buf));
 	for (i = 0;i < ((lenth - 1) / XBEEMAXDATA) + 1;i++)
 	{
 		pack_lenth = 0;
@@ -528,99 +525,78 @@ uint16_t Xbee::pack(const char * data, uint16_t lenth)// lenth of data
 			pack_lenth = XBEEMAXDATA;
 		else
 			pack_lenth = lenth - XBEEMAXDATA * i;
-		pack_buf[0 + (XBEEMAXDATA + 18) * i] = 0x7e;
-		pack_lenth += 14;
-		pack_buf[1 + (XBEEMAXDATA + 18) * i] = pack_lenth >> 8;
-		pack_buf[2 + (XBEEMAXDATA + 18) * i] = pack_lenth & 0xff;
-		pack_buf[3 + (XBEEMAXDATA + 18) * i] = 0x10;
-                pack_buf[4 + (XBEEMAXDATA + 18) * i] = 0;
-		add_trans(&pack_buf[5 + (XBEEMAXDATA + 18) * i], targ_add);
-		pack_buf[13 + (XBEEMAXDATA + 18) * i] = 0xff;
-                pack_buf[14 + (XBEEMAXDATA + 18) * i] = 0xf0;
-		pack_buf[15 + (XBEEMAXDATA + 18) * i] = 0;
-		pack_buf[16 + (XBEEMAXDATA + 18) * i] = 0;
-		memcpy(&pack_buf[17 + (XBEEMAXDATA + 18) * i], (data + XBEEMAXDATA * i), pack_lenth - 14);
+		pack_buf[0 + (XBEEMAXDATA + 9) * i] = 0x7e;
+		pack_lenth += 5;
+		pack_buf[1 + (XBEEMAXDATA + 9) * i] = pack_lenth >> 8;
+		pack_buf[2 + (XBEEMAXDATA + 9) * i] = pack_lenth & 0xff;
+		pack_buf[3 + (XBEEMAXDATA + 9) * i] = 1;
+                pack_buf[4 + (XBEEMAXDATA + 9) * i] = 0;
+		pack_buf[5 + (XBEEMAXDATA + 9) * i] = targ_add >> 8;
+		pack_buf[6 + (XBEEMAXDATA + 9) * i] = targ_add & 0xff;
+		pack_buf[7 + (XBEEMAXDATA + 9) * i] = 0;
+		memcpy(&pack_buf[8 + (XBEEMAXDATA + 9) * i], (data + XBEEMAXDATA * i), pack_lenth - 5);
 		check = 0;
 		for (int u = 3;u < pack_lenth + 3;u++)
-			check += pack_buf[u + (XBEEMAXDATA + 18) * i];
-		pack_buf[pack_lenth + 3 + (XBEEMAXDATA + 18) * i] = 0xFF - check;
+			check += pack_buf[u + (XBEEMAXDATA + 9) * i];
+		pack_buf[pack_lenth + 3 + (XBEEMAXDATA + 9) * i] = 0xFF - check;
 	}
-	return lenth + 18 * i;
-}
-uint16_t Xbee::pack(const char * data, uint16_t lenth, uint16_t targ_sysid)
-{
-	targ_add= ((targ_sysid +0xe0) & 0xff) * 0x0101;
-	return pack(data, lenth);
+	return lenth + 9 * i;
 }
 
-//0				3												15
-//start Length	F_t	 Address_64				 Reserved	Options Data Checksum
-//7E	00 17	90	 00 13 A2 00 41 78 E9 79 00 00		01		__	 64
+//start-delimeter Length Frame_type Address RSSI Option-byte Data Checksum
+//7E			  __ __	 81		    __ __	__   00			 ____ 81
 uint8_t Xbee::decode(void)
 {
-	static uint8_t cursor = 0;
-	if (!operating)
-		return -1;
-	else
-	{
-		uint8_t byte = 0;
-		byte = (obj->*read)();
-		cursor++;
-		if (cursor == datalenth)
-		{
-			operating = false;
-			cursor = 0;
-			(obj->*read)();
-		}
-		return byte;
-	}
+        static uint8_t cursor = 0;
+        if (!operating)
+                return -1;
+        else
+        {
+                uint8_t byte = 0;
+                byte = obj->read();
+                cursor++;
+                if (cursor == datalenth)
+                {
+                        operating = false;
+                        cursor = 0;
+                        obj->read();
+                }
+                return byte;
+        }
 }
 uint16_t Xbee::data_available()
 {
-	if (!operating)
-	{
-		uint8_t byte[15] = { 0 };
-		while ((obj->*available)() > 15)
-		{
-			byte[0] = (obj->*read)();
-			if (byte[0] == 0x7E)
-			{
-				for (int i = 1;i < 4;i++)
-					byte[i] = (obj->*read)();
-				if (byte[3] == 0x90)
-				{
-					for (int i = 4;i < 15;i++)
-						byte[i] = (obj->*read)();
-					recv_add = inverse_add_trans(&byte[4]);
-					datalenth = byte[1] * 256 + byte[2] - 12;
-					operating = true;
-					return (obj->*available)();
-				}
-			}
-		}
-		return 0;
-	}
-	else
-		return (obj->*available)();
+        if (!operating)
+        {
+                uint8_t byte[8] = { 0 };
+                while (obj->available() > 8)
+                {
+                        byte[0] = obj->read();
+                        if (byte[0] == 0x7E)
+                        {
+                                for (int i = 1;i < 4;i++)
+                                        byte[i] = obj->read();
+                                if (byte[3] == 0x81)
+                                {
+                                        for (int i = 4;i < 8;i++)
+                                                byte[i] = obj->read();
+                                        recv_add = byte[4] * 256 + byte[5];
+                                        datalenth= byte[1] * 256 + byte[2] - 5;
+                                        operating = true;
+                                        return obj->available();
+                                }
+                        }
+                }
+                return 0;
+        }
+        else
+                return obj->available();
 }
-
-void Xbee::set_targ_add(uint64_t* add_list, uint8_t lenth)
+void Xbee::set_targ_add(uint8_t* add_list, uint8_t lenth)
 {
-	memcpy(targ_add_list,add_list, lenth);
-	targ_add_lenth = lenth;
-}
-
-void Xbee::add_trans(uint8_t * buffer, uint64_t add)
-{
-	for (int i = 0;i < 8;i++)
-		*(buffer + i) = (add>> ((7 - i) * 8))&0xff;
-}
-uint64_t Xbee::inverse_add_trans(uint8_t * buffer)
-{
-	uint64_t add = 0;
-	for (int i = 0;i < 8;i++)
-		add += (uint64_t)*(buffer + i) << ((7 - i) * 8);
-	return add;
+    for(int i=0;i<lenth;i++)
+	    targ_add_list[i] = ((*(add_list+i)+0xe0)&0xff)*0x0101;//target_add=(targ_sysid+0xe0)*0x0101 sysid: 1 2 3 4 
+    targ_add_lenth=lenth;
 }
 
 #endif //XBEE_TELEM

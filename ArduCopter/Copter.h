@@ -700,7 +700,7 @@ private:
     void send_proximity(mavlink_channel_t chan, uint16_t count_max);
     void send_rpm(mavlink_channel_t chan);
     #if XBEE_TELEM==ENABLED
-    void set_send_add(uint64_t* add_list, uint8_t lenth);
+    void set_send_add(uint8_t* add_list, uint8_t lenth);
     uint16_t get_recv_add();
     #endif
     void rpm_update();

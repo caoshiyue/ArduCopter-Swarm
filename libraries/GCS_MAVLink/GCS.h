@@ -166,8 +166,8 @@ public:
     void send_accelcal_vehicle_position(uint8_t position);
 
     #if XBEE_TELEM==ENABLED
-        void xbee_set_targ_add(uint64_t* add_list, uint8_t lenth);
-        uint16_t xbee_get_recv_add();//unenable
+        void xbee_set_targ_add(uint8_t* add_list, uint8_t lenth);
+        uint16_t xbee_get_recv_add();
     #endif
     // return a bitmap of active channels. Used by libraries to loop
     // over active channels to send to all active channels    
