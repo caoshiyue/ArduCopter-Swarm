@@ -16,11 +16,8 @@ public:
 	typedef uint8_t(PX4::PX4UARTDriver::*call_read)(void);
 	typedef uint16_t(PX4::PX4UARTDriver::*call_available)(void);
 	void xbee_init(call_read _read, call_available _available,PX4::PX4UARTDriver* _obj);
-	void set_targ_add(uint8_t* add_list, uint8_t lenth);
 	//uint16_t get_recv_add();
 	uint16_t targ_add;
-	uint16_t targ_add_list[10];
-    	uint8_t targ_add_lenth;
 protected:
 	uint16_t pack(const char *s, uint16_t lenth);
 	uint8_t decode(void);
@@ -60,8 +57,7 @@ public:
     uint16_t rewrite_available();
     uint16_t xbee_available();
     int16_t xbee_read();
-    size_t xbee_write(const uint8_t *buffer,size_t size);
-    void xbee_set_targ_add(uint8_t* add_list, uint8_t lenth);
+    size_t xbee_write(const uint8_t chan,const uint8_t *buffer,size_t size);
 	uint16_t xbee_get_recv_add();
     #endif
 

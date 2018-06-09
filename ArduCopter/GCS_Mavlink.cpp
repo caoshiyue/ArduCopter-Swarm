@@ -286,10 +286,6 @@ void NOINLINE Copter::send_rpm(mavlink_channel_t chan)
     }
 }
 #if XBEE_TELEM==ENABLED
-void Copter::set_send_add(uint8_t* add_list, uint8_t lenth)
-{
-    gcs_chan[MAVLINK_COMM_2].xbee_set_targ_add(add_list, lenth);
-}
 uint16_t Copter::get_recv_add()
 {
     return gcs_chan[MAVLINK_COMM_2].xbee_get_recv_add();
@@ -1890,6 +1886,23 @@ void GCS_MAVLINK_Copter::handleMessage(mavlink_message_t* msg)
         break;
     }
 #endif //  HIL_MODE != HIL_MODE_DISABLED
+
+#if MISSION_MANAGE==ENABLED
+    case MAVLINK_MSG_ID_MISSION_MANAGE: // MAV ID: 94
+    {
+        mavlink_mission_manage_t packet;
+        mavlink_msg_mission_manage_decode(msg, &packet);
+        copter.handle_mission_select(packet.start, packet.mission_num);
+        break;
+    }
+    case MAVLINK_MSG_ID_MISSION_PARAM: // MAV ID: 95
+    {
+        mavlink_mission_param_t packet;
+        mavlink_msg_mission_param_decode(msg, &packet);
+        copter.handle_set_para(packet.mission_id,packet.param_uint,packet.param_float);
+        break;
+    }
+#endif
 
     case MAVLINK_MSG_ID_RADIO:
     case MAVLINK_MSG_ID_RADIO_STATUS:       // MAV ID: 109

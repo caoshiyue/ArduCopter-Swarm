@@ -142,6 +142,9 @@ public:
 #if ADVANCED_FAILSAFE == ENABLED
     friend class AP_AdvancedFailsafe_Copter;
 #endif
+#if MISSION_MANAGE==ENABLED
+    friend class Mission_base;
+#endif
     friend class AP_Arming_Copter;
 
     Copter(void);
@@ -700,8 +703,14 @@ private:
     void send_proximity(mavlink_channel_t chan, uint16_t count_max);
     void send_rpm(mavlink_channel_t chan);
     #if XBEE_TELEM==ENABLED
-    void set_send_add(uint8_t* add_list, uint8_t lenth);
     uint16_t get_recv_add();
+    #endif
+    #if MISSION_MANAGE==ENABLED
+    void mission_manage();
+    void handle_mission_select(uint8_t,uint8_t);
+    void handle_set_para(uint8_t,uint8_t* ,float* );
+    void send_mission_status(mavlink_channel_t chan);
+    void upload_posvel(mavlink_channel_t chan);
     #endif
     void rpm_update();
     void button_update();

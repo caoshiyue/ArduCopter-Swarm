@@ -558,9 +558,11 @@ void Copter::guided_posvel_control_run()
     float dt = pos_control->time_since_last_xy_update();
 
     // update at poscontrol update rate
-    if (dt >= pos_control->get_dt_xy()) {
+    if (dt >= pos_control->get_dt_xy()) 
+    {
         // sanity check dt
-        if (dt >= 0.2f) {
+        if (dt >= 0.2f) 
+        {
             dt = 0.0f;
         }
 

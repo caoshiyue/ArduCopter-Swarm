@@ -323,20 +323,18 @@ int16_t PX4UARTDriver::xbee_read()
 {
     return decode();
 }
-size_t PX4UARTDriver::xbee_write(const uint8_t *buffer, size_t size)
+size_t PX4UARTDriver::xbee_write(const uint8_t chan ,const uint8_t *buffer, size_t size)
 {
-    uint16_t lenth =0;
-    for(int i=0;i<targ_add_lenth;i++)
-    {
-        targ_add=targ_add_list[i];
-        lenth= pack((const char*)buffer,(uint16_t)size);
-        lenth= write(pack_buf,lenth);
-    }
+    uint16_t lenth = 0;
+    if (chan == 2)
+        targ_add = 0xdfdf; //gcs
+    else if (chan == 5)
+        targ_add = 0xffff; //broadcast
+    else
+        targ_add = (chan-5 + 0xe0) * 0x0101; //target_add=(targ_sysid+0xe0)*0x0101 sysid: 1 2 3 4
+    lenth = pack((const char *)buffer, (uint16_t)size);
+    lenth = write(pack_buf, lenth);
     return lenth;
-}
-void PX4UARTDriver::xbee_set_targ_add(uint8_t* add_list, uint8_t lenth)
-{
-    set_targ_add(add_list, lenth);//target_add=(targ_sysid+0xe0)*0x0101 sysid: 1 2 3 4 
 }
 #endif
 
@@ -506,8 +504,6 @@ void Xbee::xbee_init(call_read _read, call_available _available,PX4::PX4UARTDriv
     read = _read;
     available = _available;
     obj=_obj;
-    targ_add_list[0]=0xdfdf;
-    targ_add_lenth=1;
 }
 
 //start-delimeter Length Frame_type Frame_ID Address Option-byte Data Checksum
@@ -592,13 +588,6 @@ uint16_t Xbee::data_available()
         else
                 return obj->available();
 }
-void Xbee::set_targ_add(uint8_t* add_list, uint8_t lenth)
-{
-    for(int i=0;i<lenth;i++)
-	    targ_add_list[i] = ((*(add_list+i)+0xe0)&0xff)*0x0101;//target_add=(targ_sysid+0xe0)*0x0101 sysid: 1 2 3 4 
-    targ_add_lenth=lenth;
-}
-
 #endif //XBEE_TELEM
 
 #endif
