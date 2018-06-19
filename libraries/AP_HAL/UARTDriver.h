@@ -40,11 +40,8 @@ public:
     virtual bool tx_pending() = 0;
 #if XBEE_TELEM==ENABLED
     virtual int16_t xbee_read();
-    virtual size_t xbee_write(const uint8_t *buffer, size_t size);
+    virtual size_t xbee_write(const uint8_t chan ,const uint8_t *buffer, size_t size);
     virtual uint16_t xbee_available();
-    virtual void xbee_set_targ_add(uint64_t* add_list, uint8_t lenth);
-    uint16_t gcs_add_h;
-    uint16_t gcs_add_l;
 #endif
     enum flow_control {
         FLOW_CONTROL_DISABLE=0, FLOW_CONTROL_ENABLE=1, FLOW_CONTROL_AUTO=2

@@ -33,7 +33,6 @@ extern const AP_HAL::HAL& hal;
 #define SERIAL5_BAUD AP_SERIALMANAGER_MAVLINK_BAUD/1000
 #endif
 
-
 const AP_Param::GroupInfo AP_SerialManager::var_info[] = {
     // @Param: 0_BAUD
     // @DisplayName: Serial0 baud rate
@@ -119,23 +118,6 @@ const AP_Param::GroupInfo AP_SerialManager::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("5_BAUD", 10, AP_SerialManager, state[5].baud, SERIAL5_BAUD),
 
-    #if XBEE_TELEM==ENABLED
-
-
-    // @Param: Xbee_gcs_add_h
-    // @DisplayName: xbee high-4 bit address of gcs
-    // @Description: xbee high-4 bit address of gcs
-    // @Values:  0x00000000
-    // @User: Standard
-    AP_GROUPINFO("Xbeegcsh", 12, AP_SerialManager, gcs_add_h, 0),
-
-    // @Param: Xbee_gcs_add_l
-    // @DisplayName: xbee low-4 bit address of gcs
-    // @Description: xbee low-4 bit address of gcs
-    // @Values:  0x00000000
-    // @User: Standard
-    AP_GROUPINFO("Xbeegcsl", 13, AP_SerialManager, gcs_add_l, 0),
-    #endif
     // index 11 used by 0_PROTOCOL
     
     AP_GROUPEND
@@ -163,17 +145,12 @@ extern bool g_nsh_should_exit;
 // init - // init - initialise serial ports
 void AP_SerialManager::init()
 {
-    #if XBEE_TELEM==ENABLED
-    hal.uartD->gcs_add_h=gcs_add_h;
-    hal.uartD->gcs_add_l=gcs_add_l;
-    #endif
     // initialise pointers to serial ports
     state[1].uart = hal.uartC;  // serial1, uartC, normally telem1
     state[2].uart = hal.uartD;  // serial2, uartD, normally telem2
     state[3].uart = hal.uartB;  // serial3, uartB, normally 1st GPS
     state[4].uart = hal.uartE;  // serial4, uartE, normally 2nd GPS
     state[5].uart = hal.uartF;  // serial5
-
 
     if (state[0].uart == nullptr) {
         init_console();

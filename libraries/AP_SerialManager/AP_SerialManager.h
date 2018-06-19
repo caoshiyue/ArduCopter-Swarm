@@ -128,11 +128,7 @@ public:
 
     // parameter var table
     static const struct AP_Param::GroupInfo var_info[];
-	
-#if XBEE_TELEM==ENABLED
-    AP_Int32 gcs_add_h;
-    AP_Int32 gcs_add_l;
-#endif
+
 private:
 
     // array of uart info

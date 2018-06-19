@@ -68,12 +68,6 @@ void GCS_MAVLINK::lock_channel(mavlink_channel_t _chan, bool lock)
     }
 }
 #if XBEE_TELEM==ENABLED
-void GCS_MAVLINK::xbee_set_targ_add(uint64_t* add_list, uint8_t lenth)
-{
-    if(chan==MAVLINK_COMM_2)
-        mavlink_comm_port[chan]->xbee_set_targ_add(add_list, lenth);
-}
-
 uint16_t GCS_MAVLINK::xbee_get_recv_add()
 {
         return 0xffff;
@@ -167,8 +161,8 @@ void comm_send_buffer(mavlink_channel_t chan, const uint8_t *buf, uint8_t len)
         return;
     }
 #if XBEE_TELEM==ENABLED
-    if (chan == MAVLINK_COMM_2)
-         mavlink_comm_port[chan]->xbee_write(buf, len);
+    if (chan == MAVLINK_COMM_2 || chan >=5 )
+         mavlink_comm_port[MAVLINK_COMM_2]->xbee_write(chan,buf,len);
     else
 #endif
     mavlink_comm_port[chan]->write(buf, len);//chan==1 C,2 D

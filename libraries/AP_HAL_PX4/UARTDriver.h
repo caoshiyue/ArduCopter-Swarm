@@ -7,36 +7,30 @@
 
 #if XBEE_TELEM==ENABLED
 
-#define XBEEMAXBUF 350
-#define XBEEMAXDATA 250
+#define XBEEMAXBUF 356
+#define XBEEMAXDATA 110
 class Xbee
 {
 public:
 	Xbee() {};
-	typedef PX4::PX4UARTDriver S_class; 
-	typedef uint8_t(S_class::*call_read)(void);
-	typedef uint16_t(S_class::*call_available)(void);
-	void set_targ_add(uint64_t* add_list, uint8_t lenth);
-	void xbee_init(call_read _read, call_available _available, S_class *_obj);
-	//uint16_t get_recv_add();         no use yet
-protected:							// for your class inherit from Xbee
+	typedef uint8_t(PX4::PX4UARTDriver::*call_read)(void);
+	typedef uint16_t(PX4::PX4UARTDriver::*call_available)(void);
+	void xbee_init(call_read _read, call_available _available,PX4::PX4UARTDriver* _obj);
+	//uint16_t get_recv_add();
+	uint16_t targ_add;
+protected:
 	uint16_t pack(const char *s, uint16_t lenth);
-	uint16_t pack(const char *s, uint16_t lenth, uint16_t targ_sysid);
 	uint8_t decode(void);
 	uint16_t data_available();
-	uint8_t pack_buf[XBEEMAXBUF];		// get packed here
-	uint64_t targ_add;	
-	uint64_t targ_add_list[10];			//add number of copter, this should be changed
-	uint8_t targ_add_lenth;
+	uint8_t pack_buf[XBEEMAXBUF];
 private:
 	bool operating;
-	uint16_t datalenth;
-	uint64_t recv_add;
+	uint8_t datalenth;
+	uint8_t Frame_ID;
+	uint16_t recv_add;
 	call_read read;
 	call_available available;
-	S_class *obj;
-	void add_trans(uint8_t* buffer,uint64_t add);
-	uint64_t inverse_add_trans(uint8_t * buffer);
+	PX4::PX4UARTDriver* obj;
 };
 #endif
 
@@ -63,8 +57,7 @@ public:
     uint16_t rewrite_available();
     uint16_t xbee_available();
     int16_t xbee_read();
-    size_t xbee_write(const uint8_t *buffer,size_t size);
-    void xbee_set_targ_add(uint64_t* add_list, uint8_t lenth);
+    size_t xbee_write(const uint8_t chan,const uint8_t *buffer,size_t size);
 	uint16_t xbee_get_recv_add();
     #endif
 
