@@ -711,10 +711,7 @@ private:
     void handle_set_para(uint8_t,uint8_t* ,float* );
     void send_mission_status(mavlink_channel_t chan);
     void upload_posvel(mavlink_channel_t chan);
-<<<<<<< HEAD
     void record_flock_posvel(uint8_t mav_id,mavlink_global_position_int_t packet);
-=======
->>>>>>> 9197220d5a0bff7b258ec924d41f3a727a539b45
     #endif
     void rpm_update();
     void button_update();
