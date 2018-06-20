@@ -55,9 +55,9 @@ void Mission_base::set_velocity(float _vx, float _vy, float _vz, float _yaw, boo
     _vx=limit_av(_vx,limit);
     _vy=limit_av(_vy,limit);
     _vz=limit_av(_vz,limit);
-    status_int[0]=(uint8_t)_vx*10;
-    status_int[1]=(uint8_t)_vy*10;
-    status_int[2]=(uint8_t)_vz*10;
+    status_float[0]=_vx;
+    status_float[1]=_vy;
+
     copter.guided_set_velocity(Vector3f(_vx * 100.0f, _vy * 100.0f, -_vz * 100.0f), !yaw_ignore, yaw_cd, !yaw_rate_ignore, yaw_rate_cds, yaw_relative);
 }
 
