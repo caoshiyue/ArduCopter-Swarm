@@ -25,10 +25,10 @@ void Mission_pigeon::init()
 uint32_t fucktime=0;
 void Mission_pigeon::run()
 {
-    upload_pvy();
+    //upload_pvy();
     upload_var();
     status_float[2]=millis()-fucktime;
-fucktime=millis();
+    fucktime=millis();
     if(this_id!=1)
         set_velocity(limit_av(u_x(),am)+vx,limit_av(u_y(),am)+vy,-limit_av(u_z(),am)+vz,mav[1].yaw);
 }

@@ -56,6 +56,24 @@ float yaw in degree
 sin() atan()... in rad
 */
 
+//-----------------------------------Mission zero ----------------------------------------------
+class Mission_default_swarm : public Mission_base 
+{
+  public:
+    Mission_default_swarm() {}
+    ~Mission_default_swarm() {}
+    void set_para(uint8_t *, float *);
+    void init();
+    void run();
+
+  private: //parameters and algorithm
+    float disx[4] = {0}; // NED coordinate     //      P
+    float disy[4] = {0}; //      P
+    float vm = 3.0; //           P
+    float proportion_v=0.2;//        P
+    uint8_t up; //               P
+};
+
 
 //-----------------------------------Mission one----------------------------------------------
 class Mission_pigeon : public Mission_base 
@@ -75,7 +93,7 @@ class Mission_pigeon : public Mission_base
     uint8_t upper[4] = {0};
     
     float K = 0.01;
-    uint8_t kp = 4; //      P
+    uint8_t kp = 4;  //      P
     uint8_t kv = 2;  //      P
     float w1 = 2.0;  //      P
     uint8_t kh = 3;  //      P

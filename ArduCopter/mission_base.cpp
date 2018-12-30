@@ -4,10 +4,7 @@
 
 float Mission_base::limit_av(float av,float limit)
 {
-    if(fabsf(av)>limit)
-        return av/fabsf(av)*limit;
-    else
-        return av;
+    return (abs(av) > limit) ? limit * abs(av) / av : av;
 }
 
 void Mission_base::set_postion(int32_t lat, int32_t lon, float alt, float _yaw, bool yaw_rate_ignore, float yaw_rate, bool yaw_ignore) //yaw_ignore==true do not consider yaw
@@ -29,7 +26,7 @@ void Mission_base::set_postion(int32_t lat, int32_t lon, float alt, float _yaw, 
     float yaw_rate_cds = 0.0f;
     if (!yaw_ignore)
     {
-        yaw_cd = ToDeg(_yaw) * 100.0f;
+        yaw_cd = _yaw * 100.0f;
     }
     if (!yaw_rate_ignore)
     {
@@ -45,13 +42,13 @@ void Mission_base::set_velocity(float _vx, float _vy, float _vz, float _yaw, boo
     float yaw_rate_cds = 0.0f;
     if (!yaw_ignore)
     {
-        yaw_cd = ToDeg(_yaw) * 100.0f;
+        yaw_cd = _yaw * 100.0f;
     }
     if (!yaw_rate_ignore)
     {
         yaw_rate_cds = ToDeg(yaw_rate) * 100.0f;
     }
-    float limit=copter.wp_nav->get_speed_up();
+    float limit=copter.wp_nav->get_speed_xy();
     _vx=limit_av(_vx,limit);
     _vy=limit_av(_vy,limit);
     _vz=limit_av(_vz,limit);
@@ -80,13 +77,13 @@ void Mission_base::set_posvel(int32_t lat, int32_t lon, float alt, float _vx, fl
     float yaw_rate_cds = 0.0f;
     if (!yaw_ignore)
     {
-        yaw_cd = ToDeg(_yaw) * 100.0f;
+        yaw_cd = _yaw * 100.0f;
     }
     if (!yaw_rate_ignore)
     {
         yaw_rate_cds = ToDeg(yaw_rate) * 100.0f;
     }
-    float limit=copter.wp_nav->get_speed_up();
+    float limit=copter.wp_nav->get_speed_xy();
     _vx=limit_av(_vx,limit);
     _vy=limit_av(_vy,limit);
     _vz=limit_av(_vz,limit);

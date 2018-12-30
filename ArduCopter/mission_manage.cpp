@@ -1,12 +1,12 @@
 #if MISSION_MANAGE==ENABLED
 #include "Copter.h"
 #include "mission_base.h"
-#define mission_number 1
+#define mission_number 2
 
 static uint8_t mission_status=0;
 static uint8_t mission_id=0;
 static uint8_t counter=0;
-Mission_base *mission_list[mission_number]={new Mission_pigeon()};                   // add missions need to modify
+Mission_base *mission_list[mission_number]={new Mission_default_swarm(),new Mission_pigeon()};                   // add missions need to modify
 
 // mission loop - 10hz
 void Copter::mission_manage() 
@@ -21,9 +21,10 @@ void Copter::mission_manage()
     }
     else if(mission_status==1 && mission_list[mission_id]->init_flag)//iteration 1
     {
-	if(copter.control_mode == GUIDED)
+        mission_list[mission_id]->upload_pvy();
+	    if(copter.control_mode == GUIDED)
         	mission_list[mission_id]->run();
-        upload_posvel(mavlink_channel_t(5));    //MAVLINK_COMM_5 broatcast
+        upload_posvel(mavlink_channel_t(5));    //MAVLINK_COMM_5 broatcast      
     }
     // suspend 0
     if(counter%16==0)
