@@ -51,9 +51,9 @@ static inline bool valid_channel(mavlink_channel_t chan)
 {
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wtautological-constant-out-of-range-compare"
-//#if XBEE_TELEM == ENABLED
+#if XBEE_TELEM == ENABLED
    return chan < MAVLINK_COMM_NUM_BUFFERS + MAX_FLOCK_NUM ;
-//#endif
+#endif
    
 #pragma clang diagnostic pop
 }

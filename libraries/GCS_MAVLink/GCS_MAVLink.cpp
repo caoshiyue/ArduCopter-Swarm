@@ -138,14 +138,24 @@ uint16_t comm_get_available(mavlink_channel_t chan)
  */
 void comm_send_buffer(mavlink_channel_t chan, const uint8_t *buf, uint8_t len)
 {
-    if (!valid_channel(chan)) {
+    if (!valid_channel(chan))
+    {
         return;
     }
-    if (gcs_alternative_active[chan]) {
+    uint8_t extern_chan = 0;
+    #if XBEE_TELEM == ENABLED
+    if (chan >= 5)
+    {
+        extern_chan = chan - 2;
+        chan = mavlink_channel_t(2);
+    }
+    #endif
+    if (gcs_alternative_active[chan])
+    {
         // an alternative protocol is active
         return;
     }
-    mavlink_comm_port[chan]->write(buf, len, chan);
+    mavlink_comm_port[chan]->write(buf, len, (chan + extern_chan));
 }
 
 /*
@@ -153,6 +163,10 @@ void comm_send_buffer(mavlink_channel_t chan, const uint8_t *buf, uint8_t len)
  */
 void comm_send_lock(mavlink_channel_t chan)
 {
+    #if XBEE_TELEM == ENABLED
+    if (chan >= 5)
+        chan = mavlink_channel_t(2);
+    #endif
     chan_locks[(uint8_t)chan].take_blocking();
 }
 
@@ -161,5 +175,9 @@ void comm_send_lock(mavlink_channel_t chan)
  */
 void comm_send_unlock(mavlink_channel_t chan)
 {
+    #if XBEE_TELEM == ENABLED
+    if (chan >= 5)
+        chan = mavlink_channel_t(2);
+    #endif
     chan_locks[(uint8_t)chan].give();
 }
