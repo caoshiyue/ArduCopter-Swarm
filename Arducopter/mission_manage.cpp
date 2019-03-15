@@ -1,51 +1,38 @@
-
 #include "Copter.h"
 
 #if MISSION_MANAGE==ENABLED
+#include "publisher.h"
 #include "mission_base.h"
+using namespace CUSTOM_MISSION;
 #define mission_number 2
-
+/// static variable init
 static uint8_t mission_status=0;
 static uint8_t mission_id=0;
-uint8_t Mission_base::counter=0;
-Mavlist Mission_base::mav[MAX_FLOCK_NUM]={Mavlist()};
 
-Mission_base *mission_list[mission_number]={new Mission_default_swarm(),new Mission_pigeon()};                   // add missions need to modify
+/// Mission list
+Mission_base *mission_list[mission_number]={new Mission_default_swarm()}; 
 
 // mission loop - 20hz
 void Copter::mission_manage() 
 {
     if(!copter.flightmode->in_guided_mode() && copter.control_mode != LOITER)
         return ;
-    if(mission_status==2)//restart or init 2
+    if(mission_status==2)//init 2
     {
         mission_list[mission_id]->init();
         if(mission_list[mission_id]->init_flag)
             mission_status=1;
     }
-    else if(mission_status==1 && mission_list[mission_id]->init_flag)//iteration 1
-    {
+    else if(mission_status==1 && mission_list[mission_id]->init_flag)//run 1
+    {   
+        Mission_base::pub.notify();
+        Mission_base::update_mypvy();
         if(copter.flightmode->in_guided_mode())
         	mission_list[mission_id]->run();
-
-        mission_list[mission_id]->upload_pvy();
-        upload_posvel(mavlink_channel_t(5));    //MAVLINK_COMM_5 broatcast      
     }
     // suspend 0
-    mission_list[mission_id]->send_mission_status(mavlink_channel_t(2),128,"mission_manage run %d", millis());
+    mission_list[mission_id]->send_mission_status(gcs_chan,128,"mission_manage run %2f", millis()/1000);
     Mission_base::counter++;
-}
-
-void NOINLINE Mission_base::send_mission_status(mavlink_channel_t chan, uint8_t interval, const char *fmt, ...)
-{
-    if(counter%interval!=0)
-        return ;
-    va_list arg_list;
-    va_start(arg_list, fmt);
-    char text[51];
-    hal.util->vsnprintf(text, sizeof(text), fmt, arg_list);
-    mavlink_msg_mission_status_send(chan, mission_id, mission_status, text);
-    va_end(arg_list);
 }
 
 void Copter::handle_mission_select(uint8_t start,uint8_t id)
@@ -61,14 +48,26 @@ void Copter::handle_set_para(uint8_t id, uint8_t* p_10,float* p_15)
     mission_list[id]->set_para(p_10,p_15);
 }
 
-void Copter::upload_posvel(mavlink_channel_t chan)
+void Copter::handle_register(uint8_t mav_id,uint8_t regist)
 {
-    //CHECK_PAYLOAD_SIZE(GLOBAL_POSITION_INT);
-    copter.send_location(chan);
+    Mission_base::pub.handle_regist_msg(mav_id,regist);
 }
+
 void Copter::handle_flock_posvel(uint8_t mav_id,mavlink_global_position_int_t packet)
 {
      if(mav_id<MAX_FLOCK_NUM)
-      Mission_base::mav[mav_id].update(packet);
+        Mission_base::sub.handle_notify_msg(mav_id,packet);
 }
+void NOINLINE Mission_base::send_mission_status(mavlink_channel_t chan, uint8_t interval, const char *fmt, ...)
+{
+    if(counter%interval!=0)
+        return ;
+    va_list arg_list;
+    va_start(arg_list, fmt);
+    char text[51];
+    hal.util->vsnprintf(text, sizeof(text), fmt, arg_list);
+    mavlink_msg_mission_status_send(chan, mission_id, mission_status, text);
+    va_end(arg_list);
+}
+
 #endif

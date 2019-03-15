@@ -2,11 +2,7 @@
 
 #if MISSION_MANAGE == ENABLED
 #include "mission_base.h"
-
-float Mission_base::limit_av(float av,float limit)
-{
-    return (abs(av) > limit) ? limit * abs(av) / av : av;
-}
+using namespace CUSTOM_MISSION;
 
 void Mission_base::set_postion(int32_t lat, int32_t lon, float alt, float yaw, bool yaw_rate_ignore, float yaw_rate) 
 {
@@ -98,7 +94,6 @@ void Mission_base::set_position_target_global(mavlink_set_position_target_global
         }
         Location::ALT_FRAME frame;
         /// This function cannot be invoked, so rewrite it 
-
         // if (!mavlink_coordinate_frame_to_location_alt_frame(packet.coordinate_frame, frame)) 
         // {
         //     // unknown coordinate frame
@@ -143,7 +138,7 @@ void Mission_base::set_position_target_global(mavlink_set_position_target_global
     else if (pos_ignore && !vel_ignore && acc_ignore)
     {
         if(!alt_ignore) // hold alt 
-            packet.vz = -(pos_neu_cm.z-Pxyz.alt)*0.005; // positive down
+            packet.vz = -(pos_neu_cm.z-my_Pxyz.alt)*0.005; // positive down
         copter.mode_guided.set_velocity(Vector3f(packet.vx * 100.0f, packet.vy * 100.0f, -packet.vz * 100.0f), !yaw_ignore, yaw_cd, !yaw_rate_ignore, yaw_rate_cds, yaw_relative);
     }
     else if (!pos_ignore && vel_ignore && acc_ignore)
@@ -153,19 +148,7 @@ void Mission_base::set_position_target_global(mavlink_set_position_target_global
     return;
 }
 
-void Mission_base::upload_pvy()
-{
-    Pxyz.lat = copter.current_loc.lat;
-    Pxyz.lng = copter.current_loc.lng;
-    Pxyz.alt = copter.current_loc.alt; //cm
-    const Vector3f &vel = copter.inertial_nav.get_velocity();
-    vx = vel.x/100.0f; //  m/s
-    vy = vel.y/100.0f;
-    vz = vel.z/100.0f;//    positive up
-    yaw = copter.ahrs.yaw_sensor/100.0f;
-}
-
-void Mavlist::update(mavlink_global_position_int_t packet)
+void Mav_status::update(mavlink_global_position_int_t packet)
 {
     time_boot_ms=packet.time_boot_ms;
     Pxyz.lat = packet.lat;
@@ -178,4 +161,41 @@ void Mavlist::update(mavlink_global_position_int_t packet)
     yaw=packet.hdg/100.0f; 
 }
 
+Location Mission_base::my_Pxyz=Location();
+float Mission_base::my_vx =0; //my
+float Mission_base::my_vy =0; 
+float Mission_base::my_vz =0; //po
+float Mission_base::my_yaw=0; 
+uint8_t Mission_base::counter=0;
+publisher Mission_base::pub=publisher();
+subscriber Mission_base::sub=subscriber();
+
+void Mission_base::update_mypvy()
+{
+    my_Pxyz.lat = copter.current_loc.lat;
+    my_Pxyz.lng = copter.current_loc.lng;
+    my_Pxyz.alt = copter.current_loc.alt; //cm
+    const Vector3f &vel = copter.inertial_nav.get_velocity();
+    my_vx = vel.x/100.0f; //  m/s
+    my_vy = vel.y/100.0f;
+    my_vz = vel.z/100.0f;//    positive up
+    my_yaw = copter.ahrs.yaw_sensor/100.0f;
+}
+float Mission_base::limit_av(float av,float limit)
+{
+    return (abs(av) > limit) ? limit * abs(av) / av : av;
+}
+
+Mav_status Mission_base::get_mav(uint8_t a)
+{
+    return sub.mav_map[a];
+}
 #endif
+
+/*
+extrapolate latitude/longitude given distances north and east
+void        location_offset(struct Location &loc, float ofs_north, float ofs_east);
+
+return the distance in meters as a N/E vector from loc1 to loc2     loc2-loc1 in Meter
+Vector2f    location_diff(const struct Location &loc1, const struct Location &loc2);    
+*/

@@ -1267,6 +1267,13 @@ void GCS_MAVLINK_Copter::handleMessage(mavlink_message_t* msg)
         copter.handle_set_para(packet.mission_id,packet.param_uint,packet.param_float);
         break;
     }
+    case MAVLINK_MSG_ID_SUB_PUB_REGISTER: // MAV ID: 97
+    {
+        mavlink_sub_pub_register_t packet;
+        mavlink_msg_sub_pub_register_decode(msg, &packet);
+        
+        break;
+    }
 #endif
 
 

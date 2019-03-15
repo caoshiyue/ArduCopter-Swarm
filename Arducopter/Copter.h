@@ -24,7 +24,6 @@
 #include <cmath>
 #include <stdio.h>
 #include <stdarg.h>
-
 #include <AP_HAL/AP_HAL.h>
 
 // Common dependencies
@@ -182,6 +181,9 @@
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
 #include <SITL/SITL.h>
 #endif
+#if MISSION_MANAGE==ENABLED
+    #include "custom_mission_namespace.h"
+#endif
 
 
 class Copter : public AP_HAL::HAL::Callbacks {
@@ -197,7 +199,8 @@ public:
     friend class AP_AdvancedFailsafe_Copter;
 #endif
 #if MISSION_MANAGE==ENABLED
-    friend class Mission_base;
+    friend class CUSTOM_MISSION::Mission_base;
+    friend class CUSTOM_MISSION::publisher;
 #endif
     friend class AP_Arming_Copter;
     friend class ToyMode;
@@ -707,11 +710,11 @@ private:
 #endif
 #if MISSION_MANAGE == ENABLED
     void mission_manage();
+    void send_location(mavlink_channel_t chan);
     void handle_mission_select(uint8_t, uint8_t);
     void handle_set_para(uint8_t, uint8_t *, float *);
-    void send_location(mavlink_channel_t chan);
-    void upload_posvel(mavlink_channel_t chan);
     void handle_flock_posvel(uint8_t mav_id, mavlink_global_position_int_t packet);
+    void handle_register(uint8_t, uint8_t);
 #endif
     // fence.cpp
     void fence_check();
