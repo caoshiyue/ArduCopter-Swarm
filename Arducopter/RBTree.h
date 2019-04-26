@@ -155,7 +155,7 @@ public:
 	{
 		return Iterator(_pHead);
 	}
-	PNode& GetRoot()
+	PNode& GetRoot() const
 	{
 		return _pHead->_pParent;
 	}

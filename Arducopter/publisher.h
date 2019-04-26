@@ -20,6 +20,7 @@ public:
   float vy = 0;              /*< Ground Y Speed (Longitude, positive east), expressed as m/s * */
   float vz = 0;              /*< Ground Z Speed (Altitude, positive up), expressed as m/s * */
   float yaw = 0;             /*< Vehicle heading (yaw angle) in degrees , 0.0..359.99 degrees. If unknown, set to: UINT16_MAX*/
+  uint8_t position_valid_check = 0;
   void update(mavlink_global_position_int_t packet);
 };
 
@@ -38,7 +39,7 @@ class subscriber
   public:
 	void regist(uint8_t, bool);
 	void handle_notify_msg(uint8_t,mavlink_global_position_int_t );
-	Map<uint8_t, Mav_status> mav_map;
+  Map<uint8_t, Mav_status> mav_map;
 };
 const mavlink_channel_t gcs_chan=mavlink_channel_t(2);
 const mavlink_channel_t broad_chan=mavlink_channel_t(5);

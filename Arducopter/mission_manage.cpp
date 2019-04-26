@@ -10,7 +10,8 @@ static uint8_t mission_status=0;
 static uint8_t mission_id=0;
 
 /// Mission list
-Mission_base *mission_list[mission_number]={new Mission_default_swarm()}; 
+//在将自定义任务添加到任务列表中，同时修改 mission_number
+Mission_base *mission_list[mission_number]={new Mission_swarm_avoid()}; 
 
 // mission loop - 20hz
 void Copter::mission_manage() 
@@ -27,12 +28,13 @@ void Copter::mission_manage()
     {   
         Mission_base::pub.notify();
         Mission_base::update_mypvy();
+        mission_list[mission_id]->send_regist();
+        mission_list[mission_id]->check_position();
         if(copter.flightmode->in_guided_mode())
         	mission_list[mission_id]->run();
     }
     // suspend 0
-    mission_list[mission_id]->send_mission_status(gcs_chan,128,"mission_manage run %2f", millis()/1000);
-    Mission_base::counter++;
+    Mission_base::counter++;    // counter only can be modified here
 }
 
 void Copter::handle_mission_select(uint8_t start,uint8_t id)
@@ -45,7 +47,12 @@ void Copter::handle_mission_select(uint8_t start,uint8_t id)
 
 void Copter::handle_set_para(uint8_t id, uint8_t* p_10,float* p_15)
 {
+    //TODO: 增加订阅数量
+    mission_list[id]->regist_leader=*p_10;
+    mission_list[id]->regist_leader+= (*(p_10+1))<<8; 
+    mission_list[mission_id]->send_regist();
     mission_list[id]->set_para(p_10,p_15);
+    mission_list[mission_id]->send_mission_status(gcs_chan, 1, "parameter received");
 }
 
 void Copter::handle_register(uint8_t mav_id,uint8_t regist)

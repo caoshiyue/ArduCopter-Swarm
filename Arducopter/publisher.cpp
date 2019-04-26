@@ -5,11 +5,16 @@
 
 namespace CUSTOM_MISSION
 {
-
+/**
+ * TODO: 订阅数量增加，广播
+ */
 void publisher::notify()
 {
-	for (auto iter = mav_sub.begin(); iter != mav_sub.end(); iter++)
-		copter.send_location(get_mav_chan(*iter));
+	if (mav_sub.size() > 6)
+		copter.send_location(broad_chan);
+	else
+		for (auto iter = mav_sub.begin(); iter != mav_sub.end(); iter++)
+			copter.send_location(get_mav_chan(*iter));
 }
 
 void publisher::handle_regist_msg(uint8_t remote_id, bool a)
@@ -19,7 +24,7 @@ void publisher::handle_regist_msg(uint8_t remote_id, bool a)
 	auto iter = mav_sub.begin();
 	for ( ;iter != mav_sub.end(); iter++)
 	{
-		if (*iter == a)
+		if (*iter == remote_id)
 			break;
 	}
 
@@ -52,7 +57,7 @@ void subscriber::handle_notify_msg(uint8_t remote_id,mavlink_global_position_int
 
 mavlink_channel_t get_mav_chan(uint8_t id)
 {
-    if(id>0&&id<MAX_FLOCK_NUM)
+    if(id>0&&id<=MAX_FLOCK_NUM)
         return mavlink_channel_t(id+5);
     else
         return mavlink_channel_t(5);

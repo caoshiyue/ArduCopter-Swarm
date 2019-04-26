@@ -1271,7 +1271,7 @@ void GCS_MAVLINK_Copter::handleMessage(mavlink_message_t* msg)
     {
         mavlink_sub_pub_register_t packet;
         mavlink_msg_sub_pub_register_decode(msg, &packet);
-        
+        copter.handle_register(msg->sysid,packet.regist);
         break;
     }
 #endif

@@ -17,9 +17,9 @@ void Mission_base::set_postion(int32_t lat, int32_t lon, float alt, float yaw, b
     packet.afx = 0;
     packet.afy = 0;
     packet.afz = 0;
-    packet.yaw = yaw;
-    packet.yaw_rate = yaw_rate;
-    packet.type_mask = ~MAVLINK_SET_POS_TYPE_MASK_POS_IGNORE;
+    packet.yaw = yaw;   //centi-degree
+    packet.yaw_rate = yaw_rate; //centi-degree
+    packet.type_mask = ~(MAVLINK_SET_POS_TYPE_MASK_POS_IGNORE|MAVLINK_SET_POS_TYPE_MASK_YAW_IGNORE);
     packet.target_system = 0;
     packet.target_component = 0;
     packet.coordinate_frame = MAV_FRAME_GLOBAL_RELATIVE_ALT;
@@ -38,9 +38,9 @@ void Mission_base::set_velocity(float vx, float vy, float vz, float yaw, bool ya
     packet.afx = 0;
     packet.afy = 0;
     packet.afz = 0;
-    packet.yaw = yaw;
-    packet.yaw_rate = yaw_rate;
-    packet.type_mask = ~MAVLINK_SET_POS_TYPE_MASK_POS_IGNORE;
+    packet.yaw = yaw;   //centi-degree
+    packet.yaw_rate = yaw_rate; //centi-degree
+    packet.type_mask = ~(MAVLINK_SET_POS_TYPE_MASK_VEL_IGNORE|MAVLINK_SET_POS_TYPE_MASK_YAW_IGNORE);
     packet.target_system = 0;
     packet.target_component = 0;
     packet.coordinate_frame = MAV_FRAME_GLOBAL_RELATIVE_ALT;
@@ -60,9 +60,9 @@ void Mission_base::set_posvel(int32_t lat, int32_t lon, float alt, float vx, flo
     packet.afx = 0;
     packet.afy = 0;
     packet.afz = 0;
-    packet.yaw = yaw;
-    packet.yaw_rate = yaw_rate;
-    packet.type_mask = ~MAVLINK_SET_POS_TYPE_MASK_POS_IGNORE;
+    packet.yaw = yaw;   //centi-degree 
+    packet.yaw_rate = yaw_rate;     //centi-degree
+    packet.type_mask = ~(MAVLINK_SET_POS_TYPE_MASK_POS_IGNORE|MAVLINK_SET_POS_TYPE_MASK_VEL_IGNORE|MAVLINK_SET_POS_TYPE_MASK_YAW_IGNORE);
     packet.target_system = 0;
     packet.target_component = 0;
     packet.coordinate_frame = MAV_FRAME_GLOBAL_RELATIVE_ALT;
@@ -84,7 +84,6 @@ void Mission_base::set_position_target_global(mavlink_set_position_target_global
          */
 
     Vector3f pos_neu_cm; // position (North, East, Up coordinates) in centimeters
-
     if (!pos_ignore)
     {
         // sanity check location
@@ -104,7 +103,6 @@ void Mission_base::set_position_target_global(mavlink_set_position_target_global
             frame = Location::ALT_FRAME_ABOVE_HOME;
         else
             return;
-
         const Location loc{
             packet.lat_int,
             packet.lon_int,
@@ -116,19 +114,19 @@ void Mission_base::set_position_target_global(mavlink_set_position_target_global
             return;
         }
     }
-
-    // prepare yaw
+       
+    // prepare yaw    
     float yaw_cd = 0.0f;
     bool yaw_relative = false;
     float yaw_rate_cds = 0.0f;
     if (!yaw_ignore)
     {
-        yaw_cd = ToDeg(packet.yaw) * 100.0f;
+        yaw_cd = packet.yaw * 100.0f;
         yaw_relative = packet.coordinate_frame == MAV_FRAME_BODY_NED || packet.coordinate_frame == MAV_FRAME_BODY_OFFSET_NED;
     }
     if (!yaw_rate_ignore)
     {
-        yaw_rate_cds = ToDeg(packet.yaw_rate) * 100.0f;
+        yaw_rate_cds = packet.yaw_rate * 100.0f;
     }
 
     if (!pos_ignore && !vel_ignore && acc_ignore)
@@ -138,7 +136,9 @@ void Mission_base::set_position_target_global(mavlink_set_position_target_global
     else if (pos_ignore && !vel_ignore && acc_ignore)
     {
         if(!alt_ignore) // hold alt 
+        {
             packet.vz = -(pos_neu_cm.z-my_Pxyz.alt)*0.005; // positive down
+        }
         copter.mode_guided.set_velocity(Vector3f(packet.vx * 100.0f, packet.vy * 100.0f, -packet.vz * 100.0f), !yaw_ignore, yaw_cd, !yaw_rate_ignore, yaw_rate_cds, yaw_relative);
     }
     else if (!pos_ignore && vel_ignore && acc_ignore)
@@ -154,11 +154,12 @@ void Mav_status::update(mavlink_global_position_int_t packet)
     Pxyz.lat = packet.lat;
     Pxyz.lng = packet.lon;
     altitude = packet.alt;   //mm   no use
-    Pxyz.alt =(int32_t)packet.relative_alt/10.0;  //mm . cm positive up
+    Pxyz.alt =(int32_t)(packet.relative_alt/10.0);  //mm . cm positive up
     vx=packet.vx/100.0f;   //m/s
     vy=packet.vy/100.0f;
     vz=packet.vz/100.0f; // positive up
     yaw=packet.hdg/100.0f; 
+    position_valid_check=0;
 }
 
 Location Mission_base::my_Pxyz=Location();
@@ -181,9 +182,43 @@ void Mission_base::update_mypvy()
     my_vz = vel.z/100.0f;//    positive up
     my_yaw = copter.ahrs.yaw_sensor/100.0f;
 }
+
+void Mission_base::send_regist()
+{
+    if(counter==0)
+    {
+        for (uint16_t i = 0; i < MAX_FLOCK_NUM; i++)
+            if (regist_leader & (1 << i))
+                sub.regist(i + 1, 1);
+            else
+                sub.regist(i + 1, 0);
+    }
+}
+
 float Mission_base::limit_av(float av,float limit)
 {
     return (abs(av) > limit) ? limit * abs(av) / av : av;
+}
+
+void Mission_base::check_position(void)
+{
+    uint8_t i=0;
+    for (auto iter = sub.mav_map.Begin(); iter != sub.mav_map.End(); iter++)
+    {
+        i=(*iter).first-1;
+        if(! (regist_leader & (1 << i) ))//*iter is not who we want to register 
+            continue;
+        else
+        {
+            if ((*iter).second.position_valid_check < 64) //  3s no position 
+                (*iter).second.position_valid_check++;
+            else
+            {
+                send_mission_status(gcs_chan, 1, "position lost from %d", (*iter));
+                (*iter).second.position_valid_check = 44;   //1s later report again
+            }
+        }
+    }
 }
 
 Mav_status Mission_base::get_mav(uint8_t a)

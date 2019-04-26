@@ -21,7 +21,7 @@ public:
 		return _t.Empty();
 	}
 
-	size_t Size()const
+	size_t Size()const //bug
 	{
 		return _t.Size();
 	}
@@ -34,7 +34,10 @@ public:
 
 	Iterator Begin()
 	{
-		return _t.Begin();
+		if(Empty())
+			return _t.End();
+		else
+			return _t.Begin();
 	}
 
 	Iterator End()
